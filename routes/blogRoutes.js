@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const requireLogin = require('../middlewares/requireLogin');
+const cleanCache = require('../middlewares/cleanCache');
+
 
 const Blog = mongoose.model('Blog');
 
@@ -14,12 +16,15 @@ module.exports = app => {
   });
 
   app.get('/api/blogs', requireLogin, async (req, res) => {
-    const blogs = await Blog.find({ _user: req.user.id });
+    const blogs = await Blog
+    .find({_user: req.user.id})
+    .cache({ key: req.user.id }) // 캐시를 사용하는 쿼리문
 
     res.send(blogs);
   });
 
-  app.post('/api/blogs', requireLogin, async (req, res) => {
+  // cleanCache 미들웨어를 먼저 실행시킨다.
+  app.post('/api/blogs', requireLogin, cleanCache, async (req, res) => {
     const { title, content } = req.body;
 
     const blog = new Blog({
